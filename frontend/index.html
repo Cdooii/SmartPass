@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartPass Login - University of Cebu</title>
+    
+    <!-- W3.CSS Framework -->
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="styles/login.css">
+</head>
+<body>
+    <!-- Background Image Container -->
+    <div class="login-background">
+        <!-- Overlay -->
+        <div class="login-overlay"></div>
+        
+        <!-- Login Container -->
+        <div class="login-container">
+            <!-- Login Card -->
+            <div class="login-card">
+                <!-- Logo Section -->
+                <div class="login-header">
+                    <img src="src/uc-logo.png" 
+                         alt="UC Logo" 
+                         class="login-logo"
+                         onerror="this.src='https://via.placeholder.com/120x120/003366/ffffff?text=UC'">
+                    <h1 class="login-title">University of Cebu</h1>
+                    <div class="login-divider"></div>
+                    <p class="login-subtitle">OFFICE OF THE PROPERTY CUSTODIAN</p>
+                    <p class="login-system-name">SmartPass System</p>
+                </div>
+
+                <!-- Login Form -->
+                <form id="loginForm" class="login-form" onsubmit="handleLogin(event)">
+                    <!-- Alert Messages (Hidden by default) -->
+                    <div id="alertMessage" class="alert-message" style="display: none;">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span id="alertText"></span>
+                        <button type="button" class="alert-close" onclick="closeAlert()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <!-- Username Field -->
+                    <div class="form-group">
+                        <label for="username" class="form-label">Username</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-user input-icon"></i>
+                            <input 
+                                type="text" 
+                                id="username" 
+                                name="username" 
+                                class="form-input" 
+                                placeholder="Enter your username"
+                                required
+                                autocomplete="username"
+                                aria-label="Username">
+                        </div>
+                    </div>
+
+                    <!-- Password Field -->
+                    <div class="form-group">
+                        <label for="password" class="form-label">Password</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-lock input-icon"></i>
+                            <input 
+                                type="password" 
+                                id="password" 
+                                name="password" 
+                                class="form-input" 
+                                placeholder="Enter your password"
+                                required
+                                autocomplete="current-password"
+                                aria-label="Password">
+                            <button 
+                                type="button" 
+                                class="toggle-password" 
+                                onclick="togglePassword()"
+                                aria-label="Toggle password visibility">
+                                <i class="fas fa-eye" id="toggleIcon"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Remember Me & Forgot Password -->
+                    <div class="form-options">
+                        <label class="checkbox-container">
+                            <input type="checkbox" id="rememberMe" name="rememberMe">
+                            <span class="checkmark"></span>
+                            <span class="checkbox-label">Stay signed in</span>
+                        </label>
+                        <a href="forgot-password.html" class="forgot-link">Forgot Password?</a>
+                    </div>
+
+                    <!-- Login Button -->
+                    <button type="submit" class="login-btn" id="loginBtn">
+                        <span class="btn-text">Login</span>
+                        <i class="fas fa-arrow-right btn-icon"></i>
+                    </button>
+
+                    <!-- Loading Spinner (Hidden by default) -->
+                    <div id="loadingSpinner" class="loading-spinner" style="display: none;">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <span>Authenticating...</span>
+                    </div>
+                </form>
+
+                <!-- Divider -->
+                <div class="divider">
+                    <span>or</span>
+                </div>
+
+                <!-- Alternative Actions -->
+                <div class="alternative-actions">
+                    <a href="visitor_registration.html" class="alt-link">
+                        <i class="fas fa-user-plus"></i>
+                        Register as Visitor
+                    </a>
+                    <a href="help.html" class="alt-link">
+                        <i class="fas fa-question-circle"></i>
+                        Need Help?
+                    </a>
+                    <p class="auth-link">
+                        Don’t have an account?
+                        <a href="register.html">Register here</a>
+                    </p>
+                </div>
+
+                <!-- Footer -->
+                <div class="login-footer">
+                    <p class="footer-text">
+                        <i class="fas fa-shield-alt"></i>
+                        Secure Login • UC Property Management
+                    </p>
+                    <p class="footer-copyright">
+                        © 2026 University of Cebu. All rights reserved.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // ===============================
+        // SMARTPASS LOGIN SCRIPT
+        // ===============================
+
+        async function handleLogin(event) {
+            event.preventDefault();
+
+            const username = document.getElementById("username").value.trim();
+            const password = document.getElementById("password").value.trim();
+            const loginBtn = document.getElementById("loginBtn");
+            const spinner = document.getElementById("loadingSpinner");
+
+            // Hide previous alerts
+            closeAlert();
+
+            if (!username || !password) {
+                showAlert("Please enter both username and password.");
+                return;
+            }
+
+            try {
+                // Show loading
+                loginBtn.style.display = "none";
+                spinner.style.display = "flex";
+
+                const response = await fetch("/admin/login", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password
+                    })
+                });
+
+                const data = await response.json();
+
+                // Restore button
+                loginBtn.style.display = "flex";
+                spinner.style.display = "none";
+
+                if (!response.ok) {
+                    showAlert(data.message || "Login failed.");
+                    return;
+                }
+
+                // ✅ Store JWT Token
+                localStorage.setItem("smartpass_token", data.token);
+
+                // Optional: Store admin info
+                localStorage.setItem("smartpass_admin", JSON.stringify(data.admin));
+
+                // Redirect after successful login
+                window.location.href = "dashboard.html";
+
+            } catch (error) {
+                loginBtn.style.display = "flex";
+                spinner.style.display = "none";
+                showAlert("Server connection failed.");
+                console.error(error);
+            }
+        }
+
+
+        // ===============================
+        // ALERT HANDLING
+        // ===============================
+
+        function showAlert(message) {
+            const alertBox = document.getElementById("alertMessage");
+            const alertText = document.getElementById("alertText");
+
+            alertText.textContent = message;
+            alertBox.style.display = "flex";
+        }
+
+        function closeAlert() {
+            const alertBox = document.getElementById("alertMessage");
+            alertBox.style.display = "none";
+        }
+
+
+        // ===============================
+        // PASSWORD TOGGLE
+        // ===============================
+
+        function togglePassword() {
+            const passwordInput = document.getElementById("password");
+            const icon = document.getElementById("toggleIcon");
+
+            if (passwordInput.type === "password") {
+                passwordInput.type = "text";
+                icon.classList.remove("fa-eye");
+                icon.classList.add("fa-eye-slash");
+            } else {
+                passwordInput.type = "password";
+                icon.classList.remove("fa-eye-slash");
+                icon.classList.add("fa-eye");
+            }
+        }
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UC Admin Registration</title>
+
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:Arial, Helvetica, sans-serif; }
+
+body {
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:url("src/campus.jpg") no-repeat center center/cover;
+  padding:20px;
+}
+
+.card {
+  background:#f4f4f4;
+  width:100%;
+  max-width:600px;
+  padding:40px;
+  border-radius:16px;
+  box-shadow:0 10px 25px rgba(0,0,0,0.2);
+}
+
+.header {
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  gap:12px;
+  margin-bottom:18px;
+}
+
+.header img { height:42px; }
+
+.main-title { font-size:14px; font-weight:bold; }
+.divider { height:1px; background:#444; margin:4px 0; }
+.sub-title { font-size:12px; }
+.visitors { font-size:14px; font-weight:bold; }
+
+h3 { margin:10px 0 20px; font-size:14px; text-align:center; }
+
+.form-group { margin-bottom:14px; }
+.form-group label { font-size:12px; display:block; margin-bottom:5px; }
+.form-group input {
+  width:100%;
+  padding:10px;
+  border-radius:8px;
+  border:1px solid #ccc;
+}
+
+.submit-btn {
+  margin-top:20px;
+  background:#0a5c78;
+  color:white;
+  border:none;
+  padding:12px;
+  border-radius:25px;
+  cursor:pointer;
+  width:100%;
+}
+
+.submit-btn:hover {
+  opacity:0.9;
+}
+
+.link-text {
+  margin-top:15px;
+  text-align:center;
+  font-size:13px;
+}
+
+.link-text a {
+  color:#0a5c78;
+  text-decoration:none;
+  font-weight:bold;
+}
+
+.error-message {
+  margin-top:12px;
+  color:red;
+  font-size:13px;
+  text-align:center;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+  <div class="header">
+    <img src="src/uc-logo.png" alt="UC Logo">
+    <div>
+      <div class="main-title">UNIVERSITY OF CEBU-MAIN</div>
+      <div class="divider"></div>
+      <div class="sub-title">OFFICE OF THE PROPERTY CUSTODIAN</div>
+    </div>
+    <div class="visitors">Admin</div>
+  </div>
+
+  <h3><i>Create your administrator account below.</i></h3>
+
+  <form id="registerForm">
+
+    <div class="form-group">
+      <label>ID Number</label>
+      <input type="text" id="id_number" required>
+    </div>
+
+    <div class="form-group">
+      <label>Full Name</label>
+      <input type="text" id="name" required>
+    </div>
+
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="username" required>
+    </div>
+
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="password" required>
+    </div>
+
+    <button type="submit" class="submit-btn">
+      Register Account
+    </button>
+
+    <div class="link-text">
+      Already have an account?
+      <a href="index.html">Login here</a>
+    </div>
+
+    <div id="errorMessage" class="error-message"></div>
+
+  </form>
+</div>
+
+<script>
+document.getElementById('registerForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+
+  const id_number = document.getElementById("id_number").value;
+  const name = document.getElementById("name").value;
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
+
+  const errorBox = document.getElementById("errorMessage");
+  errorBox.textContent = "";
+
+  try {
+    const response = await fetch("/admin/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id_number,
+        name,
+        username,
+        password
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      errorBox.textContent = data.message || "Registration failed.";
+      return;
+    }
+
+    alert("Registration successful. Please login.");
+    window.location.href = "index.html";
+
+  } catch (err) {
+    errorBox.textContent = "Server error. Please try again.";
+  }
+});
+</script>
+
+</body>
+</html>

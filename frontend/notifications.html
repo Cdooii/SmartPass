@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications - SmartPass</title>
+    
+    <!-- W3.CSS Framework -->
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Local Styles -->
+    <link rel="stylesheet" href="styles/topbar.css">
+    <link rel="stylesheet" href="styles/dashboard.css">
+    <link rel="stylesheet" href="styles/notifications.css">
+</head>
+<body>
+    <!-- Topbar -->
+    <header class="topbar">
+        <div class="topbar-content">
+            <div class="topbar-left">
+                <img src="src/uc-logo.png" alt="UC Logo" class="topbar-logo"
+                     onerror="this.src='https://via.placeholder.com/50x50/003366/ffffff?text=UC'">
+                <div class="topbar-branding">
+                    <b class="topbar-title">UNIVERSITY OF CEBU-MAIN</b>
+                    <hr class="branding-line">
+                    <span class="topbar-subtitle">OFFICE OF THE PROPERTY CUSTODIAN</span>
+                </div>
+            </div>
+
+            <div class="topbar-right">
+                <nav class="topbar-nav w3-hide-small">
+                    <a href="dashboard.html" class="topbar-link" id="nav-dashboard">
+                        <i class="fas fa-home"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="qr-scan.html" class="topbar-link" id="nav-qr">
+                        <i class="fas fa-qrcode"></i>
+                        <span>QR Scan</span>
+                    </a>
+                    <a href="javascript:void(0)" class="topbar-link" id="nav-permit" onclick="openPermitModal()">
+                        <i class="fas fa-file-alt"></i>
+                        <span>Permit Form</span>
+                    </a>
+                    <a href="history.html" class="topbar-link" id="nav-history">
+                        <i class="fas fa-history"></i>
+                        <span>History</span>
+                    </a>
+                </nav>
+
+                <div class="notification-bell">
+                    <button class="bell-trigger" onclick="window.location.href='notifications.html'" id="notificationBell">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
+                    </button>
+                </div>
+
+                <div class="profile-dropdown">
+                    <div class="profile-trigger" onclick="toggleLogout()">
+                        <img src="src/default-avatar.png"
+                             alt="User Profile"
+                             class="profile-avatar"
+                             id="userAvatar"
+                             onerror="this.src='https://www.w3schools.com/w3images/avatar2.png'">
+                        <div class="profile-info w3-hide-small">
+                            <span class="profile-name" id="userName">Loading...</span>
+                            <span class="profile-role" id="userRole">Loading...</span>
+                        </div>
+                        <i class="fas fa-chevron-down profile-arrow"></i>
+                    </div>
+
+                    <div id="logoutDropdown" class="dropdown-menu">
+                        <div class="dropdown-header">
+                            <img src="src/default-avatar.png"
+                                 alt="User Profile"
+                                 class="dropdown-avatar"
+                                 id="dropdownAvatar"
+                                 onerror="this.src='https://www.w3schools.com/w3images/avatar2.png'">
+                            <div>
+                                <div class="dropdown-name" id="dropdownName">Loading...</div>
+                                <div class="dropdown-email" id="dropdownEmail">user@uc.edu.ph</div>
+                            </div>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <a href="profile.html" class="dropdown-item">
+                            <i class="fas fa-user"></i>
+                            Profile
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a href="javascript:void(0)" onclick="handleLogout()" class="dropdown-item logout-item">
+                            <i class="fas fa-sign-out-alt"></i>
+                            Logout
+                        </a>
+                    </div>
+                </div>
+
+                <button class="mobile-menu-toggle w3-hide-medium w3-hide-large" onclick="toggleMobileMenu()">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="mobileMenu" class="mobile-nav" style="display:none;">
+            <a href="dashboard.html" class="mobile-nav-link">
+                <i class="fas fa-home"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="qr-scan.html" class="mobile-nav-link">
+                <i class="fas fa-qrcode"></i>
+                <span>QR Scan</span>
+            </a>
+            <a href="javascript:void(0)" class="mobile-nav-link" onclick="openPermitModal()">
+                <i class="fas fa-file-alt"></i>
+                <span>Permit Form</span>
+            </a>
+            <a href="history.html" class="mobile-nav-link">
+                <i class="fas fa-history"></i>
+                <span>History</span>
+            </a>
+        </div>
+    </header>
+
+    <!-- Permit Modal -->
+    <div id="permitModal" class="modal">
+        <div class="modal-content permit-modal">
+            <h2>Select Permit Type</h2>
+
+            <div class="permit-options">
+                <button class="permit-option computer" onclick="goToPermit('computer')">
+                    <i class="fas fa-laptop"></i>
+                    <span>Computer Equipment</span>
+                </button>
+
+                <button class="permit-option non-computer" onclick="goToPermit('nonComputer')">
+                    <i class="fas fa-box"></i>
+                    <span>Non-Computer Equipment</span>
+                </button>
+            </div>
+
+            <button class="close-btn" onclick="closePermitModal()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="notifications-container">
+
+            <div class="page-header">
+                <div class="header-left">
+                    <h1 class="page-title">
+                        <i class="fas fa-bell"></i>
+                        Notifications
+                    </h1>
+                    <p class="page-subtitle">Review pending equipment permits and approval results</p>
+                </div>
+                <div class="header-actions">
+                    <button class="action-btn secondary" onclick="markAllAsRead()">
+                        <i class="fas fa-check-double"></i>
+                        Mark All as Read
+                    </button>
+                    <button class="action-btn secondary" onclick="refreshNotifications()">
+                        <i class="fas fa-sync-alt"></i>
+                        Refresh
+                    </button>
+                </div>
+            </div>
+
+            <div class="filter-tabs">
+                <button class="tab-btn active" onclick="filterNotifications('all')" data-filter="all">
+                    All <span class="tab-count" id="countAll">0</span>
+                </button>
+                <button class="tab-btn" onclick="filterNotifications('unread')" data-filter="unread">
+                    Unread <span class="tab-count" id="countUnread">0</span>
+                </button>
+                <button class="tab-btn" onclick="filterNotifications('pending')" data-filter="pending">
+                    Pending <span class="tab-count" id="countPending">0</span>
+                </button>
+                <button class="tab-btn" onclick="filterNotifications('approved')" data-filter="approved">
+                    Approved <span class="tab-count" id="countApproved">0</span>
+                </button>
+                <button class="tab-btn" onclick="filterNotifications('rejected')" data-filter="rejected">
+                    Rejected <span class="tab-count" id="countRejected">0</span>
+                </button>
+            </div>
+
+            <div class="notifications-list" id="notificationsList">
+                <div class="loading-state" id="loadingState">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Loading notifications...</p>
+                </div>
+
+                <div class="empty-state" id="emptyState" style="display: none;">
+                    <i class="fas fa-bell-slash"></i>
+                    <h3>No Notifications</h3>
+                    <p>You're all caught up! No notifications to display.</p>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script src="js/topbar.js"></script>
+    <script src="js/notifications.js"></script>
+</body>
+</html>

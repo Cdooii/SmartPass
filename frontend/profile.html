@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Profile</title>
+
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:Arial, Helvetica, sans-serif; }
+
+body {
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:url("src/campus.jpg") no-repeat center center/cover;
+  padding:20px;
+}
+
+.card {
+  background:#f4f4f4;
+  width:100%;
+  max-width:600px;
+  padding:40px;
+  border-radius:16px;
+  box-shadow:0 10px 25px rgba(0,0,0,0.2);
+}
+
+.header {
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  gap:12px;
+  margin-bottom:18px;
+}
+
+.header img { height:42px; }
+
+.main-title { font-size:14px; font-weight:bold; }
+.divider { height:1px; background:#444; margin:4px 0; }
+.sub-title { font-size:12px; }
+.role-label { font-size:14px; font-weight:bold; }
+
+h3 { margin:10px 0 20px; font-size:14px; text-align:center; }
+
+.form-group { margin-bottom:14px; }
+.form-group label { font-size:12px; display:block; margin-bottom:5px; }
+
+.form-group input {
+  width:100%;
+  padding:10px;
+  border-radius:8px;
+  border:1px solid #ccc;
+}
+
+.form-group input[readonly] {
+  background:#e9ecef;
+  color:#333;
+  cursor:not-allowed;
+}
+
+.submit-btn {
+  margin-top:15px;
+  background:#0a5c78;
+  color:white;
+  border:none;
+  padding:12px;
+  border-radius:25px;
+  cursor:pointer;
+  width:100%;
+}
+
+.delete-btn {
+  margin-top:10px;
+  background:#c82333;
+  color:white;
+  border:none;
+  padding:12px;
+  border-radius:25px;
+  cursor:pointer;
+  width:100%;
+}
+
+.error-message {
+  margin-top:10px;
+  color:red;
+  text-align:center;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+  <div class="header">
+    <img src="src/uc-logo.png" alt="UC Logo">
+    <div>
+      <div class="main-title">UNIVERSITY OF CEBU-MAIN</div>
+      <div class="divider"></div>
+      <div class="sub-title">OFFICE OF THE PROPERTY CUSTODIAN</div>
+    </div>
+    <div class="role-label">Profile</div>
+  </div>
+
+  <h3><i>Manage your account information</i></h3>
+
+  <form id="profileForm">
+
+    <div class="form-group">
+      <label for="id_number">ID Number</label>
+      <input type="text" id="id_number" readonly>
+    </div>
+
+    <div class="form-group">
+      <label for="staff_role">Role</label>
+      <input type="text" id="staff_role" readonly>
+    </div>
+
+    <div class="form-group">
+      <label for="name">Full Name</label>
+      <input type="text" id="name" required>
+    </div>
+
+    <div class="form-group">
+      <label for="username">Username</label>
+      <input type="text" id="username" required>
+    </div>
+
+    <div class="form-group">
+      <label for="password">New Password (optional)</label>
+      <input type="password" id="password">
+    </div>
+
+    <button type="submit" class="submit-btn">
+      Update Profile
+    </button>
+
+    <button type="button" class="delete-btn" onclick="deleteAccount()">
+      Delete Account
+    </button>
+
+    <div id="errorMessage" class="error-message"></div>
+
+  </form>
+</div>
+
+<script>
+const token = localStorage.getItem("smartpass_token");
+
+if (!token) {
+  window.location.href = "index.html";
+}
+
+async function loadProfile() {
+  try {
+    const res = await fetch("/admin/profile", {
+      headers: { Authorization: "Bearer " + token }
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      document.getElementById("errorMessage").textContent = data.message || "Failed to load profile";
+      return;
+    }
+
+    document.getElementById("id_number").value = data.id_number || "";
+    document.getElementById("staff_role").value = data.staff_role || "";
+    document.getElementById("name").value = data.name || "";
+    document.getElementById("username").value = data.username || "";
+  } catch (err) {
+    document.getElementById("errorMessage").textContent = "Failed to load profile";
+    console.error(err);
+  }
+}
+
+document.getElementById("profileForm").addEventListener("submit", async function(e) {
+  e.preventDefault();
+
+  const name = document.getElementById("name").value;
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
+
+  try {
+    const res = await fetch("/admin/profile", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token
+      },
+      body: JSON.stringify({ name, username, password })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      document.getElementById("errorMessage").textContent = data.message;
+      return;
+    }
+
+    alert(data.message);
+
+    // ✅ Redirect to dashboard
+    window.location.href = "dashboard.html";
+  } catch (err) {
+    console.error(err);
+    alert("Failed to update profile");
+  }
+});
+
+async function deleteAccount() {
+
+  if (!confirm("Are you sure you want to delete your account?")) return;
+
+  try {
+    const res = await fetch("/admin/profile", {
+      method: "DELETE",
+      headers: { Authorization: "Bearer " + token }
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.message);
+      return;
+    }
+
+    alert("Account deleted successfully");
+
+    // ✅ Clear auth
+    localStorage.removeItem("smartpass_token");
+
+    // OPTIONAL: clear everything
+    localStorage.clear();
+
+    // ✅ Redirect to login page
+    window.location.href = "index.html";
+
+  } catch (err) {
+    console.error(err);
+    alert("Failed to delete account");
+  }
+}
+
+loadProfile();
+</script>
+
+</body>
+</html>

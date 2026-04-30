@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Non-Computer Equipment Permit - SmartPass</title>
+    
+    <!-- W3.CSS Framework -->
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="styles/topbar.css">
+    <link rel="stylesheet" href="styles/dashboard.css">
+    <link rel="stylesheet" href="styles/nonComputer-permit.css">
+</head>
+<body>
+    <!-- Topbar -->
+    <header class="topbar">
+        <div class="topbar-content">
+            <!-- Left Side: UC Branding -->
+            <div class="topbar-left">
+                <img src="src/uc-logo.png" alt="UC Logo" class="topbar-logo" onerror="this.src='https://via.placeholder.com/50x50/003366/ffffff?text=UC'"> 
+                <div class="topbar-branding">
+                    <b class="topbar-title">UNIVERSITY OF CEBU-MAIN</b>
+                    <hr class="branding-line">
+                    <span class="topbar-subtitle">OFFICE OF THE PROPERTY CUSTODIAN</span>
+                </div>
+            </div>
+
+            <!-- Right Side: Navigation & Profile -->
+            <div class="topbar-right">
+                <!-- Navigation Links (Hide on small screens) -->
+                <nav class="topbar-nav w3-hide-small">
+                    <a href="dashboard.html" class="topbar-link" id="nav-dashboard">
+                        <i class="fas fa-home"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="qr-scan.html" class="topbar-link disabled" id="nav-qr" onclick="return false;">
+                        <i class="fas fa-qrcode"></i>
+                        <span>QR Scan</span>
+                    </a>
+                    <a href="permit-form.html" class="topbar-link disabled" id="nav-permit" onclick="return false">
+                        <i class="fas fa-file-alt"></i>
+                        <span>Permit Form</span>
+                    </a>
+                    <a href="history.html" class="topbar-link" id="nav-history">
+                        <i class="fas fa-history"></i>
+                        <span>History</span>
+                    </a>
+                </nav>
+                <!-- Profile Dropdown -->
+                <div class="profile-dropdown">
+                    <div class="profile-trigger" onclick="toggleLogout()">
+                        <img src="src/default-avatar.png" 
+                             alt="User Profile" 
+                             class="profile-avatar"
+                             id="userAvatar"
+                             onerror="this.src='https://www.w3schools.com/w3images/avatar2.png'">
+                        <div class="profile-info w3-hide-small">
+                            <span class="profile-name" id="userName">Loading...</span>
+                            <span class="profile-role" id="userRole">Custodian</span>
+                        </div>
+                        <i class="fas fa-chevron-down profile-arrow"></i>
+                    </div>
+                    
+                    <!-- Dropdown Menu -->
+                    <div id="logoutDropdown" class="dropdown-menu">
+                        <div class="dropdown-header">
+                            <img src="src/default-avatar.png" 
+                                 alt="User Profile" 
+                                 class="dropdown-avatar"
+                                 id="dropdownAvatar"
+                                 onerror="this.src='https://www.w3schools.com/w3images/avatar2.png'">
+                            <div>
+                                <div class="dropdown-name" id="dropdownName">Loading...</div>
+                                <div class="dropdown-email" id="dropdownEmail">user@uc.edu.ph</div>
+                            </div>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <a href="profile.html" class="dropdown-item">
+                            <i class="fas fa-user"></i>
+                            Profile
+                        </a>
+                        <a href="notifications.html" class="dropdown-item" id="approvalMenu" style="display:none;">
+                            <i class="fas fa-check-circle"></i>
+                            Approvals
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a href="javascript:void(0)" onclick="handleLogout()" class="dropdown-item logout-item">
+                            <i class="fas fa-sign-out-alt"></i>
+                            Logout
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Mobile Menu Toggle -->
+                <button class="mobile-menu-toggle w3-hide-medium w3-hide-large" onclick="toggleMobileMenu()">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Navigation Menu -->
+        <div id="mobileMenu" class="mobile-nav" style="display:none;">
+            <a href="dashboard.html" class="mobile-nav-link">
+                <i class="fas fa-home"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="qr-scan.html" class="mobile-nav-link">
+                <i class="fas fa-qrcode"></i>
+                <span>QR Scan</span>
+            </a>
+            <a href="permit-form.html" class="mobile-nav-link active">
+                <i class="fas fa-file-alt"></i>
+                <span>Permit Form</span>
+            </a>
+            <a href="history.html" class="mobile-nav-link">
+                <i class="fas fa-history"></i>
+                <span>History</span>
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="permit-container">
+            
+            <!-- Computer Equipment Form -->
+            <div class="permit-form-section">
+                <div class="form-header">
+                    <div>
+                        <h2 class="form-title">GATE PASS FOR NON-COMPUTER/MUSICAL EQUIPMENT</h2>
+                    </div>
+                    <button class="back-btn" onclick="window.location.href='permit-form.html'">
+                        <i class="fas fa-arrow-left"></i>
+                        Back to Selection
+                    </button>
+                </div>
+
+                <form id="nonComputerEquipmentForm" onsubmit="submitNonComputerForm(event)">
+                    <!-- Basic Information -->
+                    <div class="form-card">
+                        <h3 class="card-title">
+                            <i class="fas fa-info-circle"></i>
+                            Basic Information
+                        </h3>
+                        
+                        <div class="form-grid">
+                            <div class="form-group full-width">
+                                <label class="form-label required">Bearer Name</label>
+                                <input type="text" 
+                                       class="form-input" 
+                                       id="nonComputerBearer" 
+                                       placeholder="Enter full name"
+                                       required>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required">Type of User</label>
+                                <select class="form-input" id="nonComputerType" required>
+                                    <option value="">Select User Type</option>
+                                    <option value="Student">Student</option>
+                                    <option value="Teaching">Teaching</option>
+                                    <option value="Non-Teaching">Non-Teaching</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">ID Number</label>
+                                <input type="text" 
+                                       class="form-input" 
+                                       id="nonComputerId" 
+                                       placeholder="GP#"
+                                       required>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Date</label>
+                                <input type="date" 
+                                       class="form-input" 
+                                       id="nonComputerDate">
+                            </div>
+
+                            <div class="form-group full-width">
+                                <label class="form-label required">Purpose</label>
+                                <textarea class="form-textarea" 
+                                          id="nonComputerPurpose" 
+                                          rows="3" 
+                                          required></textarea>
+                            </div>
+                        </div>
+
+                        <button type="button" class="clear-btn" onclick="clearBasicInfo('non-computer')">
+                            <i class="fas fa-eraser"></i>
+                            Clear All
+                        </button>
+                    </div>
+
+                    <!-- Equipment Items -->
+                    <div class="form-card">
+                        <h3 class="card-title">
+                            <i class="fas fa-list"></i>
+                            Equipment Items
+                        </h3>
+                        <p>Authorized by the undersigned to use/transport the following items...</p> <br>
+                        <p class="card-description">Add items with quantity and complete description</p>
+
+                        <div class="form-card">
+                            <h3 class="card-title">
+                                <i class="fas fa-list"></i>
+                                Equipment Details
+                            </h3>
+
+                            <div class="form-grid">
+
+                                <div class="form-group">
+                                    <label class="form-label required">Category</label>
+                                    <input type="text" class="form-input" id="itemCategory" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label required">Quantity</label>
+                                    <input type="number" class="form-input" id="itemQuantity" value="1" min="1" required>
+                                </div>
+
+                                <div class="form-group full-width">
+                                    <label class="form-label required">Item Description</label>
+                                    <input type="text" class="form-input" id="itemDescription" required>
+                                </div>
+
+                                <div class="form-group full-width">
+                                    <label class="form-label">Condition Notes</label>
+                                    <input type="text" class="form-input" id="itemCondition">
+                                </div>
+
+                            </div>
+                        </div>     
+                    
+                    <div class="form-card">
+                        <h3 class="card-title">
+                            <i class="fas fa-camera"></i>
+                            Upload Photo
+                        </h3>
+                        <p class="card-description">Upload a clear photo of the equipment</p>
+
+                        <div class="upload-area" id="nonComputerUploadArea" onclick="document.getElementById('nonComputerPhotoInput').click()">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <h4>Click to Upload Photo</h4>
+                            <p>PNG, JPG up to 5MB</p>
+                        </div>
+
+                        <input
+                            type="file"
+                            id="nonComputerPhotoInput"
+                            accept="image/*"
+                            style="display:none;"
+                            onchange="handlePhotoUpload(event, 'nonComputer')"
+                        >
+
+                        <div id="nonComputerPhotoPreview" class="photo-preview-grid"></div>
+                    </div>
+
+                    <!-- Approvals Section -->
+                    <div class="form-card">
+                        <h3 class="card-title">
+                            <i class="fas fa-user-check"></i>
+                            Approvals
+                        </h3>
+                        
+                        <div class="approvals-grid">
+
+                            <div class="approval-item">
+                                <label class="approval-label">Noted by:</label>
+                                <div class="approval-info">
+                                    <select id="notedBy" class="approval-input"></select>
+                                    <small class="approval-role">Inventory In-charge</small>
+                                </div>
+                            </div>
+
+                            <div class="approval-item">
+                                <label class="approval-label">Recommending Approval:</label>
+                                <div class="approval-info">
+                                    <select id="recommendingApproval" class="approval-input"></select>
+                                    <small class="approval-role">CSU Head Officer</small>
+                                </div>
+                            </div>
+
+                            <div class="approval-item">
+                                <label class="approval-label">Checked by:</label>
+                                <div class="approval-info">
+                                    <select id="checkedBy" class="approval-input"></select>
+                                    <small class="approval-role">Guard on Duty</small>
+                                </div>
+                            </div>
+
+                            <div class="approval-item highlight">
+                                <label class="approval-label">Property Custodian:</label>
+                                <div class="approval-info">
+                                    <select id="custodianApproval" class="approval-input"></select>
+                                    <small class="approval-role">Property Custodian</small>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="form-actions">
+                        <button type="button" class="action-btn secondary" onclick="window.location.href='permit-form.html'">
+                            <i class="fas fa-times"></i>
+                            Back
+                        </button>
+                        <button type="submit" class="action-btn primary">
+                            <i class="fas fa-paper-plane"></i>
+                            Submit
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="success-modal">
+        <div class="success-modal-content">
+            <div class="success-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h2 class="success-title">Application Submitted!</h2>
+            <p class="success-message" id="successMessage"></p>
+            <div class="success-details">
+                <div class="detail-row">
+                    <span class="detail-label">QR ID:</span>
+                    <span class="detail-value" id="successPassId">-</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Bearer:</span>
+                    <span class="detail-value" id="successBearer">-</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">ID Number:</span>
+                    <span class="detail-value" id="successIdNumber">-</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Date Issued:</span>
+                    <span class="detail-value" id="successDate">-</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Status:</span>
+                    <span class="detail-value">
+                        <span class="status-badge pending">
+                            <i class="fas fa-clock"></i>
+                            PENDING
+                        </span>
+                    </span>
+                </div>
+                <div style="margin-top:20px;">
+                    <img id="qrImage" style="width:150px; display: none;">
+                </div>
+            </div>
+            <div class="success-actions-grid">
+                <button class="success-btn icon-btn" onclick="printSticker()">
+                    <i class="fas fa-print"></i>
+                    <span>Print Sticker</span>
+                </button>
+                <button class="success-btn icon-btn" onclick="downloadQR()">
+                    <i class="fas fa-download"></i>
+                    <span>Download QR</span>
+                </button>
+                <button class="success-btn icon-btn" onclick="emailPass()">
+                    <i class="fas fa-envelope"></i>
+                    <span>Email Pass</span>
+                </button>
+            </div>
+            <div class="success-actions">
+                <button class="success-btn secondary" onclick="closeSuccessModal()">
+                    <i class="fas fa-times"></i>
+                    Close
+                </button>
+                <button class="success-btn primary" onclick="createNewApplication()">
+                    <i class="fas fa-plus"></i>
+                    New Application
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/topbar.js"></script>
+    <script src="js/nonComputer-Permit.js"></script>
+    
+</body>
+</html>

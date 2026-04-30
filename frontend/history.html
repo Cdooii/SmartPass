@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>History - SmartPass Dashboard</title>
+    
+    <!-- W3.CSS Framework -->
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="styles/topbar.css">
+    <link rel="stylesheet" href="styles/dashboard.css">
+    <link rel="stylesheet" href="styles/history.css">
+</head>
+
+<!-- =========================
+     QR SCANNER MODAL (ADDED)
+========================= -->
+<div id="qrModal" style="
+    display:none;
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.7);
+    z-index:9999;
+    justify-content:center;
+    align-items:center;
+">
+
+    <div style="
+        background:#fff;
+        width:350px;
+        padding:20px;
+        border-radius:10px;
+        text-align:center;
+    ">
+
+        <h3><i class="fas fa-qrcode"></i> Scan QR Code</h3>
+
+        <!-- CAMERA -->
+        <div id="reader" style="width:300px; margin:auto;"></div>
+
+        <!-- MANUAL QR INPUT -->
+        <div style="margin-top:15px;">
+            <input 
+                type="text" 
+                id="manualQRInput" 
+                placeholder="Enter QR ID (e.g. QRV-001)"
+                style="width:100%; padding:10px;"
+            >
+
+            <button onclick="simulateScan()" style="margin-top:10px; width:100%;">
+                Submit QR
+            </button>
+        </div>
+
+        <button onclick="closeQRModal()" style="margin-top:15px;">
+            Close
+        </button>
+
+    </div>
+</div>
+
+<div id="permitModal" class="modal">
+  <div class="modal-content permit-modal">
+
+    <h2>Select Permit Type</h2>
+
+    <div class="permit-options">
+
+      <button class="permit-option computer" onclick="goToPermit('computer')">
+        <i class="fas fa-laptop"></i>
+        <span>Computer Equipment</span>
+      </button>
+
+      <button class="permit-option non-computer" onclick="goToPermit('nonComputer')">
+        <i class="fas fa-box"></i>
+        <span>Non-Computer Equipment</span>
+      </button>
+
+    </div>
+
+    <button class="close-btn" onclick="closePermitModal()">Cancel</button>
+
+  </div>
+</div>
+
+<body>
+    <!-- Topbar -->
+    <header class="topbar">
+        <div class="topbar-content">
+            <!-- Left Side: UC Branding -->
+            <div class="topbar-left">
+                <img src="src/uc-logo.png" alt="UC Logo" class="topbar-logo" onerror="this.src='https://via.placeholder.com/50x50/003366/ffffff?text=UC'"> 
+                <div class="topbar-branding">
+                    <b class="topbar-title">UNIVERSITY OF CEBU-MAIN</b>
+                    <hr class="branding-line">
+                    <span class="topbar-subtitle">OFFICE OF THE PROPERTY CUSTODIAN</span>
+                </div>
+            </div>
+
+            <!-- Right Side: Navigation & Profile -->
+            <div class="topbar-right">
+                <!-- Navigation Links (Hide on small screens) -->
+                <nav class="topbar-nav w3-hide-small">
+                    <a href="dashboard.html" class="topbar-link active" id="nav-dashboard">
+                        <i class="fas fa-home"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="#" onclick="openQRModal(); return false;" class="topbar-link" id="nav-qr">
+                        <i class="fas fa-qrcode"></i>
+                        <span>QR Scan</span>
+                    </a>
+                    <a href="#" class="topbar-link" id="nav-permit" onclick="openPermitModal()">                        
+                        <i class="fas fa-file-alt"></i>
+                        <span>Permit Form</span>
+                    </a>
+                    <a href="history.html" class="topbar-link" id="nav-history">
+                        <i class="fas fa-history"></i>
+                        <span>History</span>
+                    </a>
+                </nav>
+                <!-- Profile Dropdown -->
+                <div class="profile-dropdown">
+                    <div class="profile-trigger" onclick="toggleLogout()">
+                        <img src="src/default-avatar.png" 
+                             alt="User Profile" 
+                             class="profile-avatar"
+                             id="userAvatar"
+                             onerror="this.src='https://www.w3schools.com/w3images/avatar2.png'">
+                        <div class="profile-info w3-hide-small">
+                            <span class="profile-name" id="userName">Loading...</span>
+                            <span class="profile-role" id="userRole">Admin</span>
+                        </div>
+                        <i class="fas fa-chevron-down profile-arrow"></i>
+                    </div>
+                    
+                    <!-- Dropdown Menu -->
+                    <div id="logoutDropdown" class="dropdown-menu">
+                        <div class="dropdown-header">
+                            <img src="src/default-avatar.png" 
+                                 alt="User Profile" 
+                                 class="dropdown-avatar"
+                                 id="dropdownAvatar"
+                                 onerror="this.src='https://www.w3schools.com/w3images/avatar2.png'">
+                            <div>
+                                <div class="dropdown-name" id="dropdownName">Loading...</div>
+                                <div class="dropdown-email" id="dropdownEmail">user@uc.edu.ph</div>
+                            </div>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <a href="profile.html" class="dropdown-item">
+                            <i class="fas fa-user"></i>
+                            Profile
+                        </a>
+                        <a href="notifications.html" class="dropdown-item" id="approvalMenu" style="display:none;">
+                            <i class="fas fa-check-circle"></i>
+                            Approvals
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a href="javascript:void(0)" onclick="handleLogout()" class="dropdown-item logout-item">
+                            <i class="fas fa-sign-out-alt"></i>
+                            Logout
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Mobile Menu Toggle -->
+                <button class="mobile-menu-toggle w3-hide-medium w3-hide-large" onclick="toggleMobileMenu()">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Navigation Menu -->
+        <div id="mobileMenu" class="mobile-nav w3-hide-medium w3-hide-large">
+            <a href="dashboard.html" class="mobile-nav-link">
+                <i class="fas fa-home"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="#" onclick="openQRModal(); return false;" class="mobile-nav-link">
+                <i class="fas fa-qrcode"></i>
+                <span>QR Scan</span>
+            </a>
+            <a href="history.html" class="mobile-nav-link active">
+                <i class="fas fa-history"></i>
+                <span>History</span>
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="dashboard-container">
+            <!-- Page Header -->
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">
+                        <i class="fas fa-history"></i>
+                        History & Records
+                    </h1>
+                    <p class="page-subtitle">View and manage all permits, scans, and activity records</p>
+                </div>
+                <button class="export-btn" onclick="exportRecords()">
+                    <i class="fas fa-download"></i>
+                    <span>Export Records</span>
+                </button>
+            </div>
+
+            <!-- Filter & Search Section -->
+            <div class="filter-section">
+                <div class="filter-header">
+                    <h3 class="filter-title">
+                        <i class="fas fa-filter"></i>
+                        Filter & Search
+                    </h3>
+                    <button class="clear-filters-btn" onclick="clearFilters()">
+                        <i class="fas fa-times"></i>
+                        Clear All
+                    </button>
+                </div>
+
+                <div class="filter-grid">
+                    <!-- Search Bar -->
+                    <div class="filter-item full-width">
+                        <label class="filter-label">
+                            <i class="fas fa-search"></i>
+                            Search
+                        </label>
+                        <input 
+                            type="text" 
+                            class="filter-input" 
+                            id="searchInput" 
+                            placeholder="Search by name, ID, equipment, or permit ID..."
+                            oninput="applyFilters()">
+                    </div>
+
+                    <!-- Date Range -->
+                    <div class="filter-item">
+                        <label class="filter-label">
+                            <i class="fas fa-calendar-alt"></i>
+                            Date From
+                        </label>
+                        <input 
+                            type="date" 
+                            class="filter-input" 
+                            id="dateFrom"
+                            onchange="applyFilters()">
+                    </div>
+
+                    <div class="filter-item">
+                        <label class="filter-label">
+                            <i class="fas fa-calendar-alt"></i>
+                            Date To
+                        </label>
+                        <input 
+                            type="date" 
+                            class="filter-input" 
+                            id="dateTo"
+                            onchange="applyFilters()">
+                    </div>
+
+                    <!-- Type Filter -->
+                    <div class="filter-item">
+                        <label class="filter-label">
+                            <i class="fas fa-user-tag"></i>
+                            Type
+                        </label>
+                        <select class="filter-select" id="typeFilter" onchange="applyFilters()">
+                            <option value="">All Types</option>
+                            <option value="visitor">Visitor</option>
+                            <option value="equipment">Equipment</option>
+                        </select>
+                    </div>
+
+                    <!-- Status Filter -->
+                    <div class="filter-item">
+                        <label class="filter-label">
+                            <i class="fas fa-info-circle"></i>
+                            Status
+                        </label>
+                        <select class="filter-select" id="statusFilter" onchange="applyFilters()">
+                            <option value="">All Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="active">Active</option>
+                            <option value="expired">Expired</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Summary -->
+            <div class="results-summary">
+                <div class="summary-text">
+                    Showing <strong id="resultCount">0</strong> records
+                </div>
+            </div>
+
+            <!-- History Table -->
+            <div class="history-table-section">
+                <div class="table-container">
+                    <table class="history-table" id="historyTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Permit ID</th>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Item/Purpose</th>
+                                <th class="w3-hide-small">Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody">
+                            <!-- Data will be populated by JavaScript -->
+                            <tr>
+                                <td colspan="7" class="no-data">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    <p>Loading records...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination">
+                    <button class="page-btn" onclick="previousPage()">
+                        <i class="fas fa-chevron-left"></i>
+                        Previous
+                    </button>
+                    <div class="page-numbers" id="pageNumbers">
+                        <!-- Page numbers will be generated here -->
+                    </div>
+                    <button class="page-btn" onclick="nextPage()">
+                        Next
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Analytics Section (moved from dashboard) -->
+            <div class="analytics-grid">
+                <!-- Monthly Summary Activity -->
+                <div class="analytics-section full-width">
+                    <div class="section-header">
+                        <div>
+                            <h2 class="section-title">
+                                <i class="fas fa-chart-line"></i>
+                                Monthly Summary Activity
+                            </h2>
+                            <p class="section-subtitle">Overview of check-ins and check-outs this month</p>
+                        </div>
+                        <select class="month-selector" id="monthSelector" onchange="updateMonthlySummary()">
+                            <option value="current">Current Month</option>
+                            <option value="last">Last Month</option>
+                            <option value="custom">Custom Range</option>
+                        </select>
+                    </div>
+                    <div class="custom-range-filters" id="customRangeFilters" style="display: none;">
+                    <div class="filter-item">
+                        <label class="filter-label">
+                            <i class="fas fa-calendar-day"></i>
+                            From
+                        </label>
+                        <input type="date" class="filter-input" id="customFrom">
+                    </div>
+                    <div class="filter-item">
+                        <label class="filter-label">
+                            <i class="fas fa-calendar-day"></i>
+                            To
+                        </label>
+                        <input type="date" class="filter-input" id="customTo">
+                    </div>
+                </div>
+                    <div class="summary-cards-grid">
+                        <div class="summary-card">
+                            <div class="summary-header">
+                                <div class="summary-icon computer">
+                                    <i class="fas fa-desktop"></i>
+                                </div>
+                                <div class="summary-title">
+                                    <h3>Computer Devices</h3>
+                                    <p>Laptops, Desktops, Tablets</p>
+                                </div>
+                            </div>
+                            <div class="summary-stats">
+                                <div class="summary-stat">
+                                    <span class="summary-label">Check-In</span>
+                                    <span class="summary-value in" id="computerIn">0</span>
+                                </div>
+                                <div class="summary-stat">
+                                    <span class="summary-label">Check-Out</span>
+                                    <span class="summary-value out" id="computerOut">0</span>
+                                </div>
+                                <div class="summary-stat">
+                                    <span class="summary-label">Net Inside</span>
+                                    <span class="summary-value net" id="computerNet">0</span>
+                                </div>
+                            </div>
+                            <div class="summary-progress">
+                                <div class="progress-bar">
+                                    <div class="progress-fill computer-progress" id="computerProgress" style="width: 0%"></div>
+                                </div>
+                                <span class="progress-text" id="computerProgressText">0% capacity</span>
+                            </div>
+                        </div>
+
+                        <div class="summary-card">
+                            <div class="summary-header">
+                                <div class="summary-icon non-computer">
+                                    <i class="fas fa-box"></i>
+                                </div>
+                                <div class="summary-title">
+                                    <h3>Non-Computer Devices</h3>
+                                    <p>Peripherals, Equipment, Others</p>
+                                </div>
+                            </div>
+                            <div class="summary-stats">
+                                <div class="summary-stat">
+                                    <span class="summary-label">Check-In</span>
+                                    <span class="summary-value in" id="nonComputerIn">0</span>
+                                </div>
+                                <div class="summary-stat">
+                                    <span class="summary-label">Check-Out</span>
+                                    <span class="summary-value out" id="nonComputerOut">0</span>
+                                </div>
+                                <div class="summary-stat">
+                                    <span class="summary-label">Net Inside</span>
+                                    <span class="summary-value net" id="nonComputerNet">0</span>
+                                </div>
+                            </div>
+                            <div class="summary-progress">
+                                <div class="progress-bar">
+                                    <div class="progress-fill non-computer-progress" id="nonComputerProgress" style="width: 0%"></div>
+                                </div>
+                                <span class="progress-text" id="nonComputerProgressText">0% capacity</span>
+                            </div>
+                        </div>
+
+                        <div class="summary-card">
+                            <div class="summary-header">
+                                <div class="summary-icon visitors">
+                                    <i class="fas fa-user-friends"></i>
+                                </div>
+                                <div class="summary-title">
+                                    <h3>Visitors</h3>
+                                    <p>All campus visitors</p>
+                                </div>
+                            </div>
+                            <div class="summary-stats">
+                                <div class="summary-stat">
+                                    <span class="summary-label">Check-In</span>
+                                    <span class="summary-value in" id="visitorsIn">0</span>
+                                </div>
+                                <div class="summary-stat">
+                                    <span class="summary-label">Check-Out</span>
+                                    <span class="summary-value out" id="visitorsOut">0</span>
+                                </div>
+                                <div class="summary-stat">
+                                    <span class="summary-label">Net Inside</span>
+                                    <span class="summary-value net" id="visitorsNet">0</span>
+                                </div>
+                            </div>
+                            <div class="summary-progress">
+                                <div class="progress-bar">
+                                    <div class="progress-fill visitors-progress" id="visitorsProgress" style="width: 0%"></div>
+                                </div>
+                                <span class="progress-text" id="visitorsProgressText">0% capacity</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+    <!-- Detail Modal (for View Details action) -->
+    <div id="detailModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Record Details</h2>
+                <button class="modal-close" onclick="closeDetailModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Content will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script> 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="js/topbar.js"></script>
+    <script src="js/history.js"></script>
+</body>
+</html>

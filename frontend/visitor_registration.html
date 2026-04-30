@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UC Visitor Registration System</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; font-family:Arial, Helvetica, sans-serif; }
+body {
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:url("src/campus.jpg") no-repeat center center/cover;
+  padding:20px;
+}
+.card {
+  background:#f4f4f4;
+  width:100%;
+  max-width:600px;
+  padding:40px;
+  border-radius:16px;
+  box-shadow:0 10px 25px rgba(0,0,0,0.2);
+}
+.header {
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  gap:12px;
+  margin-bottom:18px;
+}
+.header img { height:42px; }
+.main-title { font-size:14px; font-weight:bold; }
+.divider { height:1px; background:#444; margin:4px 0; }
+.sub-title { font-size:12px; font-weight:bold; letter-spacing:1px; }
+.form-group { margin-bottom:15px; }
+label { display:block; margin-bottom:5px; font-weight:bold; font-size:13px; color:#333; }
+input, select, textarea {
+  width:100%;
+  padding:10px;
+  border:1px solid #ccc;
+  border-radius:6px;
+  font-size:14px;
+}
+.submit-btn {
+  width:100%;
+  padding:12px;
+  background:#003366;
+  color:#fff;
+  border:none;
+  border-radius:6px;
+  font-weight:bold;
+  cursor:pointer;
+  margin-top:10px;
+}
+.modal {
+  display:none;
+  position:fixed;
+  top:0; left:0; width:100%; height:100%;
+  background:rgba(0,0,0,0.6);
+  align-items:center;
+  justify-content:center;
+  z-index:1000;
+}
+.modal.active { display:flex; }
+.modal-content {
+  background:#fff;
+  padding:30px;
+  border-radius:12px;
+  max-width:450px;
+  width:90%;
+  text-align:center;
+}
+.qr-container { border: 2px dashed #003366; padding: 20px; margin: 20px 0; border-radius: 10px; }
+.preview-image {
+  width: 100%;
+  max-width: 180px;
+  border-radius: 10px;
+  margin-top: 10px;
+  border: 1px solid #ccc;
+  object-fit: cover;
+}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="header">
+    <img src="src/uc-logo.png" alt="UC Logo">
+    <div>
+      <div class="main-title">UNIVERSITY OF CEBU-MAIN</div>
+      <div class="divider"></div>
+      <div class="sub-title">OFFICE OF THE PROPERTY CUSTODIAN</div>
+    </div>
+  </div>
+
+  <form id="visitorForm" enctype="multipart/form-data">
+    <div class="form-group">
+      <label>Full Name</label>
+      <input type="text" id="name" required placeholder="Juan Dela Cruz">
+    </div>
+    <div class="form-group">
+      <label>Contact Number</label>
+      <input type="text" id="contact" required placeholder="09123456789">
+    </div>
+    <div class="form-group">
+      <label>Purpose of Visit</label>
+      <textarea id="purpose" rows="2" required></textarea>
+    </div>
+    <div class="form-group">
+      <label>Date of Visit</label>
+      <input type="date" id="dateVisit" required>
+    </div>
+    <div class="form-group">
+      <label>Visitor Picture</label>
+      <input type="file" id="photo" accept="image/*">
+      <img id="photoPreview" class="preview-image" style="display:none;" alt="Visitor Preview">
+    </div>
+    <input type="hidden" id="dateFiled">
+    <button type="submit" class="submit-btn">Register Visit</button>
+  </form>
+</div>
+
+<div id="qrModal" class="modal">
+  <div class="modal-content">
+    <div class="header" style="text-align: left;">
+      <img src="src/uc-logo.png" alt="UC Logo">
+      <div>
+        <div class="main-title">UNIVERSITY OF CEBU-MAIN</div>
+        <div class="divider"></div>
+        <div class="sub-title">OFFICE OF THE PROPERTY CUSTODIAN</div>
+      </div>
+    </div>
+    <div class="qr-container">
+      <h4 style="color:#003366;">VISITOR PASS</h4>
+      <p style="font-weight:bold; font-size:1.2em; margin: 10px 0;" id="displayQRID"></p>
+      <img id="qrImage" src="" alt="QR Code" style="width:180px;">
+      <p style="margin-top:10px; font-size:12px;">Valid Until: <span id="validDate" style="font-weight:bold;"></span></p>
+    </div>
+    <button onclick="window.print()" class="submit-btn">Download / Print Pass</button>
+    <button onclick="location.reload()" class="submit-btn" style="background:#666;">Close</button>
+  </div>
+</div>
+
+<script>
+const photoInput = document.getElementById("photo");
+const photoPreview = document.getElementById("photoPreview");
+
+photoInput.addEventListener("change", function () {
+  const file = this.files[0];
+  if (!file) {
+    photoPreview.style.display = "none";
+    photoPreview.src = "";
+    return;
+  }
+
+  photoPreview.src = URL.createObjectURL(file);
+  photoPreview.style.display = "block";
+});
+
+document.getElementById("visitorForm").addEventListener("submit", async function (e) {
+  e.preventDefault();
+
+  const name = document.getElementById("name").value;
+  const contact = document.getElementById("contact").value;
+  const purpose = document.getElementById("purpose").value;
+  const dateVisit = document.getElementById("dateVisit").value;
+  const photo = document.getElementById("photo").files[0];
+
+  try {
+    const formData = new FormData();
+    formData.append("name", name);
+    formData.append("contact_number", contact);
+    formData.append("purpose", purpose);
+    formData.append("date_of_visit", dateVisit);
+
+    if (photo) {
+      formData.append("photo", photo);
+    }
+
+    const response = await fetch("/visitor/register", {
+      method: "POST",
+      body: formData
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      alert(data.message || "Registration failed");
+      return;
+    }
+
+    document.getElementById("qrImage").src = data.qr_image;
+    document.getElementById("displayQRID").textContent = data.qr_code_data;
+
+    const date = new Date(dateVisit);
+    document.getElementById("validDate").textContent =
+      date.toLocaleDateString("en-PH", {
+        year: "numeric",
+        month: "long",
+        day: "numeric"
+      });
+
+    document.getElementById("qrModal").classList.add("active");
+  } catch (err) {
+    console.error(err);
+    alert("Server error");
+  }
+});
+</script>
+</body>
+</html>

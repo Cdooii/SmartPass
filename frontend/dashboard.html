@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartPass Dashboard - University of Cebu</title>
+    
+    <!-- W3.CSS Framework -->
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="styles/topbar.css">
+    <link rel="stylesheet" href="styles/dashboard.css">
+</head>
+
+<!-- =========================
+     QR SCANNER MODAL (ADDED)
+========================= -->
+<div id="qrModal" style="
+    display:none;
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.7);
+    z-index:9999;
+    justify-content:center;
+    align-items:center;
+">
+
+    <div style="
+        background:#fff;
+        width:350px;
+        padding:20px;
+        border-radius:10px;
+        text-align:center;
+    ">
+
+        <h3><i class="fas fa-qrcode"></i> Scan QR Code</h3>
+
+        <!-- CAMERA -->
+        <div id="reader" style="width:300px; margin:auto;"></div>
+
+        <!-- MANUAL QR INPUT -->
+        <div style="margin-top:15px;">
+            <input 
+                type="text" 
+                id="manualQRInput" 
+                placeholder="Enter QR ID (e.g. QRV-001)"
+                style="width:100%; padding:10px;"
+            >
+
+            <button onclick="simulateScan()" style="margin-top:10px; width:100%;">
+                Submit QR
+            </button>
+        </div>
+
+        <button onclick="closeQRModal()" style="margin-top:15px;">
+            Close
+        </button>
+
+    </div>
+</div>
+
+<div id="pendingModal" class="approval-modal" style="display:none;">
+  <div class="modal-content" style="max-width:900px;">
+
+    <h2>Pending Applications</h2>
+
+    <table class="w3-table-all">
+      <thead>
+        <tr>
+          <th>Pass ID</th>
+          <th>Bearer</th>
+          <th>Type</th>
+          <th>Purpose</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody id="pendingTableBody"></tbody>
+    </table>
+
+    <br>
+    <button onclick="closePendingModal()">Close</button>
+
+  </div>
+</div>
+
+<div id="approvalModal" class="approval-modal">
+  <div class="modal-content" style="max-width:700px;">
+
+    <h2>Permit Details</h2>
+
+    <div id="approvalContent"></div>
+
+  </div>
+</div>
+
+<!-- QR LIBRARY -->
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<!-- PERMIT MODAL -->
+<div id="permitModal" class="modal">
+  <div class="modal-content permit-modal">
+
+    <h2>Select Permit Type</h2>
+
+    <div class="permit-options">
+
+      <button class="permit-option computer" onclick="goToPermit('computer')">
+        <i class="fas fa-laptop"></i>
+        <span>Computer Equipment</span>
+      </button>
+
+      <button class="permit-option non-computer" onclick="goToPermit('nonComputer')">
+        <i class="fas fa-box"></i>
+        <span>Non-Computer Equipment</span>
+      </button>
+
+    </div>
+
+    <button class="close-btn" onclick="closePermitModal()">Cancel</button>
+
+  </div>
+</div>
+
+
+<body>
+    <!-- Topbar -->
+    <header class="topbar">
+        <div class="topbar-content">
+            <!-- Left Side: UC Branding -->
+            <div class="topbar-left">
+                <img src="src/uc-logo.png" alt="UC Logo" class="topbar-logo" onerror="this.src='https://via.placeholder.com/50x50/003366/ffffff?text=UC'"> 
+                <div class="topbar-branding">
+                    <b class="topbar-title">UNIVERSITY OF CEBU-MAIN</b>
+                    <hr class="branding-line">
+                    <span class="topbar-subtitle">OFFICE OF THE PROPERTY CUSTODIAN</span>
+                </div>
+            </div>
+
+            <!-- Right Side: Navigation & Profile -->
+            <div class="topbar-right">
+                <!-- Navigation Links (Hide on small screens) -->
+                <nav class="topbar-nav w3-hide-small">
+                    <a href="dashboard.html" class="topbar-link active" id="nav-dashboard">
+                        <i class="fas fa-home"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="#" onclick="openQRModal(); return false;" class="topbar-link" id="nav-qr">
+                        <i class="fas fa-qrcode"></i>
+                        <span>QR Scan</span>
+                    </a>
+                    <a href="#" class="topbar-link" id="nav-permit" onclick="openPermitModal()">                        
+                        <i class="fas fa-file-alt"></i>
+                        <span>Permit Form</span>
+                    </a>
+                    <a href="history.html" class="topbar-link" id="nav-history">
+                        <i class="fas fa-history"></i>
+                        <span>History</span>
+                    </a>
+                </nav>
+                <!-- Profile Dropdown -->
+                <div class="profile-dropdown">
+                    <div class="profile-trigger" onclick="toggleLogout()">
+                        <img src="src/default-avatar.png" 
+                             alt="User Profile" 
+                             class="profile-avatar"
+                             id="userAvatar"
+                             onerror="this.src='https://www.w3schools.com/w3images/avatar2.png'">
+                        <div class="profile-info w3-hide-small">
+                            <span class="profile-name" id="userName">Loading...</span>
+                            <span class="profile-role" id="userRole">Admin</span>
+                        </div>
+                        <i class="fas fa-chevron-down profile-arrow"></i>
+                    </div>
+                    
+                    <!-- Dropdown Menu -->
+                    <div id="logoutDropdown" class="dropdown-menu">
+                        <div class="dropdown-header">
+                            <img src="src/default-avatar.png" 
+                                 alt="User Profile" 
+                                 class="dropdown-avatar"
+                                 id="dropdownAvatar"
+                                 onerror="this.src='https://www.w3schools.com/w3images/avatar2.png'">
+                            <div>
+                                <div class="dropdown-name" id="dropdownName">Loading...</div>
+                                <div class="dropdown-email" id="dropdownEmail">user@uc.edu.ph</div>
+                            </div>
+                        </div>
+                        <div class="dropdown-divider"></div>
+                        <a href="profile.html" class="dropdown-item">
+                            <i class="fas fa-user"></i>
+                            Profile
+                        </a>
+                        <a href="notifications.html" class="dropdown-item" id="approvalMenu" style="display:none;">
+                            <i class="fas fa-check-circle"></i>
+                            Approvals
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a href="javascript:void(0)" onclick="handleLogout()" class="dropdown-item logout-item">
+                            <i class="fas fa-sign-out-alt"></i>
+                            Logout
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Mobile Menu Toggle -->
+                <button class="mobile-menu-toggle w3-hide-medium w3-hide-large" onclick="toggleMobileMenu()">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Navigation Menu -->
+        <div id="mobileMenu" class="mobile-nav w3-hide-medium w3-hide-large">
+            <a href="dashboard.html" class="mobile-nav-link active">
+                <i class="fas fa-home"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="#" onclick="openQRModal(); return false;" class="mobile-nav-link">
+                <i class="fas fa-qrcode"></i>
+                <span>QR Scan</span>
+            </a>
+            <a href="history.html" class="mobile-nav-link">
+                <i class="fas fa-history"></i>
+                <span>History</span>
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="dashboard-container">
+            <!-- Welcome Section -->
+            <div class="welcome-section">
+                <div class="welcome-text">
+                    <h1 class="welcome-title">Hello, <span id="welcomeName">Cedric</span>!</h1>
+                    <p class="welcome-subtitle">Welcome back to SmartPass Dashboard</p>
+                </div>
+            </div>
+
+            <!-- Quick Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card" onclick="openPendingModal()" style="cursor:pointer;">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-value" id="ongoingApplications">0</h3>
+                        <p class="stat-label">Ongoing Applications</p>
+                        <span class="stat-trend neutral">
+                            <i class="fas fa-hourglass-half"></i> For Approval
+                        </span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <i class="fas fa-laptop"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-value" id="equipmentInside">0</h3>
+                        <p class="stat-label">Equipment Inside</p>
+                        <span class="stat-trend positive">
+                            <i class="fas fa-arrow-up"></i> Live count
+                        </span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 class="stat-value" id="visitorInside">0</h3>
+                        <p class="stat-label">Visitors Inside</p>
+                        <span class="stat-trend positive">
+                            <i class="fas fa-arrow-up"></i> Live count
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Feed Section -->
+            <div class="analytics-section">
+                <div class="section-header">
+                    <div>
+                        <h2 class="section-title">
+                            <i class="fas fa-stream"></i>
+                            Live Activity Feed
+                        </h2>
+                        <p class="section-subtitle">Real-time entry/exit scans and ongoing applications</p>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table" id="liveFeedTable">
+                        <thead>
+                            <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Item/Purpose</th>
+                            <th>Time IN</th>
+                            <th class="w3-hide-small">Time OUT</th>
+                            <th class="w3-hide-small">Status</th>
+                        </tr>
+                        </thead>
+                        <tbody id="liveFeedBody">
+                            <!-- Data will be populated by JavaScript -->
+                            <tr>
+                                <td colspan="6" class="no-data">
+                                    <i class="fas fa-inbox"></i>
+                                    <p>Loading live feed...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="js/topbar.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>
