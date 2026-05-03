@@ -67,6 +67,29 @@ function formatDateOnly(dateString) {
   });
 }
 
+function formatDateInput(dateString) {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toISOString().slice(0, 10);
+}
+
+function isRenewable(record) {
+  if (record.type !== "Equipment" || !record.validity_date) return false;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const expiry = new Date(record.validity_date);
+  expiry.setHours(0, 0, 0, 0);
+
+  const renewStart = new Date(expiry);
+  renewStart.setDate(expiry.getDate() - 2);
+
+  // Renewable from 2 days before expiry and anytime after expiry
+  return today >= renewStart;
+}
+
 function statusClass(status) {
   const s = String(status || "").toLowerCase();
 
@@ -76,7 +99,6 @@ function statusClass(status) {
 
   return "expired";
 }
-
 
 /* ================================
    Records
@@ -309,6 +331,11 @@ function viewDetails(permitId) {
             <span class="detail-label">Approved</span>
             <span class="detail-value">${escapeHtml(formatDateTime(record.approvedAt))}</span>
           </div>
+
+          <div class="detail-item">
+            <span class="detail-label">Validity Date</span>
+            <span class="detail-value">${escapeHtml(formatDateOnly(record.validity_date))}</span>
+          </div>
           `
           : ""
       }
@@ -358,7 +385,7 @@ function viewDetails(permitId) {
           ? `
           <div class="detail-item full-width">
             <span class="detail-label">Picture</span>
-            <img src="${record.photo}" class="detail-photo" 
+            <img src="${escapeHtml(record.photo)}" class="detail-photo" 
                  style="max-width:220px; border-radius:10px; border:1px solid #ccc;">
           </div>
           `
@@ -410,10 +437,26 @@ function viewDetails(permitId) {
   }
 
   // ===============================
-  // EXPORT BUTTON
+  // EXPORT + RENEW BUTTON
   // ===============================
+  const renewButton = record.type === "Equipment" && isRenewable(record)
+    ? `
+      <button class="w3-button w3-green" onclick="openRenewModal('${escapeHtml(record.permitId)}')">
+        <i class="fas fa-sync-alt"></i> Renew Permit
+      </button>
+    `
+    : record.type === "Equipment"
+      ? `
+        <button class="w3-button w3-gray" disabled title="Renewal is only available 2 days before expiry">
+          <i class="fas fa-lock"></i> Renew Available 2 Days Before Expiry
+        </button>
+      `
+      : "";
+
   html += `
-      <div class="detail-item full-width" style="margin-top:20px; text-align:right;">
+      <div class="detail-item full-width" style="margin-top:20px; text-align:right; display:flex; gap:10px; justify-content:flex-end;">
+        ${renewButton}
+
         <button class="w3-button w3-blue" onclick="exportHistoryPDF()">
           <i class="fas fa-file-pdf"></i> Export Full History
         </button>
@@ -428,6 +471,269 @@ function viewDetails(permitId) {
 
 function closeDetailModal() {
   document.getElementById("detailModal")?.classList.remove("show");
+}
+
+/* ================================
+   Renewal modal
+================================ */
+function openRenewModal(permitId) {
+  const record = allRecords.find((r) => r.permitId === permitId);
+  if (!record || record.type !== "Equipment") return;
+
+  let modal = document.getElementById("renewModal");
+
+  if (!modal) {
+    document.body.insertAdjacentHTML("beforeend", `
+      <div id="renewModal" class="modal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title">Renew Equipment Permit</h2>
+            <button class="modal-close" onclick="closeRenewModal()">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+
+          <div class="modal-body">
+            <form id="renewForm" class="detail-grid" onsubmit="submitRenewal(event)">
+              <input type="hidden" id="renewPassId">
+
+              <div class="detail-item">
+                <span class="detail-label">Permit ID / QR Code</span>
+                <input class="filter-input" id="renewPermitId" readonly>
+              </div>
+
+              <div class="detail-item">
+                <span class="detail-label">Current Validity Date</span>
+                <input class="filter-input" id="renewValidityDate" readonly>
+              </div>
+
+              <div class="detail-item">
+                <span class="detail-label">ID Number</span>
+                <input class="filter-input" id="renewExternalId" required>
+              </div>
+
+              <div class="detail-item">
+                <span class="detail-label">Owner Name</span>
+                <input class="filter-input" id="renewName" required>
+              </div>
+
+              <div class="detail-item">
+                <span class="detail-label">Contact Number</span>
+                <input class="filter-input" id="renewContact">
+              </div>
+
+              <div class="detail-item">
+                <span class="detail-label">Owner Type</span>
+                <select class="filter-select" id="renewOwnerType" required>
+                  <option value="Student">Student</option>
+                  <option value="Teaching">Teaching</option>
+                  <option value="Non-Teaching">Non-Teaching</option>
+                </select>
+              </div>
+
+              <div class="detail-item">
+                <span class="detail-label">Department</span>
+                <input class="filter-input" id="renewDepartment">
+              </div>
+
+              <div class="detail-item">
+                <span class="detail-label">Item Name</span>
+                <input class="filter-input" id="renewItemName" required>
+              </div>
+
+              <div class="detail-item full-width">
+                <span class="detail-label">Purpose</span>
+                <textarea class="filter-input" id="renewPurpose" required></textarea>
+              </div>
+
+              <div class="detail-item full-width">
+                <span class="detail-label">Additional Notes / Description</span>
+                <textarea class="filter-input" id="renewItemDescription"></textarea>
+              </div>
+
+              <div id="renewElectronicFields" class="detail-item full-width"></div>
+              <div id="renewOtherFields" class="detail-item full-width"></div>
+
+              <div class="detail-item full-width" style="text-align:right; margin-top:15px;">
+                <button type="button" class="w3-button w3-gray" onclick="closeRenewModal()">Cancel</button>
+                <button type="submit" class="w3-button w3-green">
+                  <i class="fas fa-check"></i> Complete Renewal
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    `);
+
+    modal = document.getElementById("renewModal");
+
+    modal.addEventListener("click", (e) => {
+      if (e.target.id === "renewModal") closeRenewModal();
+    });
+  }
+
+  document.getElementById("renewPassId").value = record.pass_id || record.record_id || "";
+  document.getElementById("renewPermitId").value = record.permitId || "";
+  document.getElementById("renewValidityDate").value = formatDateInput(record.validity_date);
+  document.getElementById("renewExternalId").value = record.external_id || "";
+  document.getElementById("renewName").value = record.name || "";
+  document.getElementById("renewContact").value = record.contactNumber || "";
+  document.getElementById("renewOwnerType").value = record.owner_type || "Student";
+  document.getElementById("renewDepartment").value = record.department || "";
+  document.getElementById("renewItemName").value = record.item_name || record.item || "";
+  document.getElementById("renewPurpose").value = record.purpose || "";
+  document.getElementById("renewItemDescription").value = record.item_description || "";
+
+  const electronicFields = document.getElementById("renewElectronicFields");
+  const otherFields = document.getElementById("renewOtherFields");
+
+  electronicFields.innerHTML = "";
+  otherFields.innerHTML = "";
+
+  if (record.item_type === "Electronic") {
+    electronicFields.innerHTML = `
+      <h4>Electronic Item Details</h4>
+
+      <div class="detail-grid">
+        <div class="detail-item">
+          <span class="detail-label">Computer Type</span>
+          <input class="filter-input" id="renewComputerType" value="${escapeHtml(record.computer_type || "")}">
+        </div>
+
+        <div class="detail-item">
+          <span class="detail-label">Brand</span>
+          <input class="filter-input" id="renewBrand" value="${escapeHtml(record.brand || "")}">
+        </div>
+
+        <div class="detail-item">
+          <span class="detail-label">Model No.</span>
+          <input class="filter-input" id="renewModelNo" value="${escapeHtml(record.model_no || "")}">
+        </div>
+
+        <div class="detail-item">
+          <span class="detail-label">Serial Number</span>
+          <input class="filter-input" id="renewSerialNumber" value="${escapeHtml(record.serial_number || "")}">
+        </div>
+
+        <div class="detail-item">
+          <span class="detail-label">Accessories</span>
+          <input class="filter-input" id="renewAccessories" value="${escapeHtml(record.accessories || "")}">
+        </div>
+
+        <div class="detail-item">
+          <span class="detail-label">Processor</span>
+          <input class="filter-input" id="renewProcessor" value="${escapeHtml(record.processor || "")}">
+        </div>
+
+        <div class="detail-item">
+          <span class="detail-label">Memory</span>
+          <input class="filter-input" id="renewMemory" value="${escapeHtml(record.memory || "")}">
+        </div>
+
+        <div class="detail-item">
+          <span class="detail-label">Hard Drive</span>
+          <input class="filter-input" id="renewHardDrive" value="${escapeHtml(record.hard_drive || "")}">
+        </div>
+
+        <div class="detail-item">
+          <span class="detail-label">Operating System</span>
+          <input class="filter-input" id="renewOperatingSystem" value="${escapeHtml(record.operating_system || "")}">
+        </div>
+      </div>
+    `;
+  }
+
+  if (record.item_type === "Other") {
+    otherFields.innerHTML = `
+      <h4>Non-Computer Item Details</h4>
+
+      <div class="detail-grid">
+        <div class="detail-item">
+          <span class="detail-label">Category</span>
+          <input class="filter-input" id="renewCategory" value="${escapeHtml(record.category || "")}">
+        </div>
+
+        <div class="detail-item">
+          <span class="detail-label">Quantity</span>
+          <input type="number" min="1" class="filter-input" id="renewQuantity" value="${escapeHtml(record.quantity || 1)}">
+        </div>
+
+        <div class="detail-item full-width">
+          <span class="detail-label">Description</span>
+          <textarea class="filter-input" id="renewOtherDescription">${escapeHtml(record.other_description || "")}</textarea>
+        </div>
+
+        <div class="detail-item full-width">
+          <span class="detail-label">Condition Notes</span>
+          <textarea class="filter-input" id="renewConditionNotes">${escapeHtml(record.condition_notes || "")}</textarea>
+        </div>
+      </div>
+    `;
+  }
+
+  modal.classList.add("show");
+}
+
+function closeRenewModal() {
+  document.getElementById("renewModal")?.classList.remove("show");
+}
+
+async function submitRenewal(event) {
+  event.preventDefault();
+
+  const passId = document.getElementById("renewPassId").value;
+
+  const payload = {
+    externalId: document.getElementById("renewExternalId").value.trim(),
+    name: document.getElementById("renewName").value.trim(),
+    contactNumber: document.getElementById("renewContact").value.trim(),
+    ownerType: document.getElementById("renewOwnerType").value,
+    department: document.getElementById("renewDepartment").value.trim(),
+    itemName: document.getElementById("renewItemName").value.trim(),
+    purpose: document.getElementById("renewPurpose").value.trim(),
+    itemDescription: document.getElementById("renewItemDescription").value.trim(),
+
+    computerType: document.getElementById("renewComputerType")?.value.trim(),
+    brand: document.getElementById("renewBrand")?.value.trim(),
+    modelNo: document.getElementById("renewModelNo")?.value.trim(),
+    serialNumber: document.getElementById("renewSerialNumber")?.value.trim(),
+    accessories: document.getElementById("renewAccessories")?.value.trim(),
+    processor: document.getElementById("renewProcessor")?.value.trim(),
+    memory: document.getElementById("renewMemory")?.value.trim(),
+    hardDrive: document.getElementById("renewHardDrive")?.value.trim(),
+    operatingSystem: document.getElementById("renewOperatingSystem")?.value.trim(),
+
+    category: document.getElementById("renewCategory")?.value.trim(),
+    quantity: document.getElementById("renewQuantity")?.value,
+    otherDescription: document.getElementById("renewOtherDescription")?.value.trim(),
+    conditionNotes: document.getElementById("renewConditionNotes")?.value.trim()
+  };
+
+  try {
+    const response = await fetch(`/history/equipment/${passId}/renew`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || "Failed to renew permit");
+    }
+
+    alert("Permit renewed successfully. Same QR code can continue to be used.");
+
+    closeRenewModal();
+    closeDetailModal();
+
+    await loadHistoryRecords();
+
+  } catch (err) {
+    console.error("Renewal error:", err);
+    alert(err.message || "Failed to renew permit.");
+  }
 }
 
 /* ================================

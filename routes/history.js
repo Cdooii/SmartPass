@@ -302,4 +302,188 @@ router.get("/summary", async (req, res) => {
   }
 });
 
+/* =========================================================
+   RENEW EQUIPMENT PERMIT
+   - Keeps the same QR code
+   - Allowed only 2 days before expiry until expiry date
+   - Extends validity by 7 days from today
+========================================================= */
+router.put("/equipment/:passId/renew", async (req, res) => {
+  const connection = await db.getConnection();
+
+  try {
+    const { passId } = req.params;
+
+    const {
+      name,
+      contactNumber,
+      externalId,
+      ownerType,
+      department,
+      itemName,
+      purpose,
+      itemDescription,
+      computerType,
+      brand,
+      modelNo,
+      serialNumber,
+      accessories,
+      processor,
+      memory,
+      hardDrive,
+      operatingSystem,
+      category,
+      quantity,
+      otherDescription,
+      conditionNotes
+    } = req.body;
+
+    await connection.beginTransaction();
+
+    const [rows] = await connection.query(`
+      SELECT 
+        ip.pass_id,
+        ip.owner_id,
+        ip.item_id,
+        ip.validity_date,
+        ip.qr_code_data,
+        i.item_type
+      FROM ITEM_PASS ip
+      JOIN ITEM i ON i.item_id = ip.item_id
+      WHERE ip.pass_id = ?
+    `, [passId]);
+
+    if (rows.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({
+        success: false,
+        message: "Equipment permit not found"
+      });
+    }
+
+    const permit = rows[0];
+
+    const [renewCheck] = await connection.query(`
+      SELECT 
+        CASE
+          WHEN CURDATE() >= DATE_SUB(?, INTERVAL 2 DAY) THEN 1
+          ELSE 0
+        END AS canRenew
+    `, [permit.validity_date, permit.validity_date]);
+
+    if (!renewCheck[0].canRenew) {
+      await connection.rollback();
+      return res.status(400).json({
+        success: false,
+        message: "Permit can only be renewed starting 2 days before expiry."
+      });
+    }
+
+    await connection.query(`
+      UPDATE ITEM_OWNER
+      SET
+        external_id = ?,
+        name = ?,
+        contact_number = ?,
+        owner_type = ?,
+        department = ?
+      WHERE owner_id = ?
+    `, [
+      externalId,
+      name,
+      contactNumber || null,
+      ownerType,
+      department || null,
+      permit.owner_id
+    ]);
+
+    await connection.query(`
+      UPDATE ITEM
+      SET
+        item_name = ?,
+        purpose = ?,
+        description = ?
+      WHERE item_id = ?
+    `, [
+      itemName,
+      purpose,
+      itemDescription || null,
+      permit.item_id
+    ]);
+
+    if (permit.item_type === "Electronic") {
+      await connection.query(`
+        UPDATE ELECTRONIC_ITEM
+        SET
+          computer_type = ?,
+          brand = ?,
+          model_no = ?,
+          serial_number = ?,
+          accessories = ?,
+          processor = ?,
+          memory = ?,
+          hard_drive = ?,
+          operating_system = ?
+        WHERE item_id = ?
+      `, [
+        computerType || "",
+        brand || "",
+        modelNo || null,
+        serialNumber || "",
+        accessories || null,
+        processor || null,
+        memory || null,
+        hardDrive || null,
+        operatingSystem || null,
+        permit.item_id
+      ]);
+    }
+
+    if (permit.item_type === "Other") {
+      await connection.query(`
+        UPDATE OTHER_ITEM
+        SET
+          category = ?,
+          quantity = ?,
+          description = ?,
+          condition_notes = ?
+        WHERE item_id = ?
+      `, [
+        category || "",
+        quantity || 1,
+        otherDescription || itemName || "",
+        conditionNotes || null,
+        permit.item_id
+      ]);
+    }
+
+    await connection.query(`
+      UPDATE ITEM_PASS
+      SET
+        validity_date = DATE_ADD(CURDATE(), INTERVAL 7 DAY),
+        approval_status = 'ACTIVE',
+        approved_at = NOW()
+      WHERE pass_id = ?
+    `, [passId]);
+
+    await connection.commit();
+
+    res.json({
+      success: true,
+      message: "Permit renewed successfully."
+    });
+
+  } catch (err) {
+    await connection.rollback();
+    console.error("Renew permit error:", err);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to renew permit"
+    });
+  } finally {
+    connection.release();
+  }
+});
+
 module.exports = router;
