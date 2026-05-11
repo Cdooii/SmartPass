@@ -7,6 +7,7 @@ let filteredRecords = [];
 let currentPage = 1;
 const recordsPerPage = 10;
 let currentView = "table";
+let currentQRPrintRecord = null;
 
 /* ================================
    Auth Headers
@@ -88,6 +89,122 @@ function isRenewable(record) {
 
   // Renewable from 2 days before expiry and anytime after expiry
   return today >= renewStart;
+}
+
+function qrImageUrl(qrData) {
+  return `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(qrData || "")}`;
+}
+
+function openQRResultModal(record, title = "Permit QR Code") {
+  if (!record) return;
+
+  currentQRPrintRecord = record;
+
+  let modal = document.getElementById("qrResultModal");
+
+  if (!modal) {
+    document.body.insertAdjacentHTML("beforeend", `
+      <div id="qrResultModal" class="modal">
+        <div class="modal-content" style="max-width:420px;">
+          <div class="modal-header">
+            <h2 class="modal-title" id="qrResultTitle">Permit QR Code</h2>
+            <button class="modal-close" onclick="closeQRResultModal()">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+
+          <div class="modal-body" style="text-align:center;">
+            <img id="qrResultImage" style="width:220px; height:220px; margin:10px auto; display:block;">
+            <h3 id="qrResultPermitId"></h3>
+            <p id="qrResultName"></p>
+            <p id="qrResultValidity"></p>
+
+            <div style="margin-top:20px; display:flex; gap:10px; justify-content:center;">
+              <button class="w3-button w3-blue" onclick="printPermitQR(currentQRPrintRecord)">
+                <i class="fas fa-print"></i> Reprint
+              </button>
+
+              <button class="w3-button w3-gray" onclick="closeQRResultModal()">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `);
+  }
+
+  document.getElementById("qrResultTitle").textContent = title;
+  document.getElementById("qrResultImage").src = qrImageUrl(record.permitId);
+  document.getElementById("qrResultPermitId").textContent = record.permitId || "-";
+  document.getElementById("qrResultName").textContent = record.name || "-";
+
+  document.getElementById("qrResultValidity").textContent =
+    record.type === "Equipment"
+      ? `Valid Until: ${formatDateOnly(record.validity_date)}`
+      : record.valid_until
+        ? `Valid Until: ${formatDateOnly(record.valid_until)}`
+        : "";
+
+  document.getElementById("qrResultModal").classList.add("show");
+}
+
+function closeQRResultModal() {
+  document.getElementById("qrResultModal")?.classList.remove("show");
+}
+
+function printPermitQR(record) {
+  if (!record) return;
+
+  const printWindow = window.open("", "_blank");
+
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>SmartPass QR</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          text-align: center;
+          padding: 30px;
+        }
+
+        img {
+          width: 250px;
+          height: 250px;
+        }
+
+        h2, h3, p {
+          margin: 8px 0;
+        }
+      </style>
+    </head>
+    <body>
+      <h2>SmartPass Permit QR</h2>
+      <img src="${qrImageUrl(record.permitId)}">
+      <h3>${escapeHtml(record.permitId || "-")}</h3>
+      <p><strong>Name:</strong> ${escapeHtml(record.name || "-")}</p>
+      <p><strong>Type:</strong> ${escapeHtml(record.type || "-")}</p>
+      <p><strong>Item/Purpose:</strong> ${escapeHtml(record.item || record.purpose || "-")}</p>
+      ${
+        record.type === "Equipment"
+          ? `<p><strong>Valid Until:</strong> ${escapeHtml(formatDateOnly(record.validity_date))}</p>`
+          : record.valid_until
+            ? `<p><strong>Valid Until:</strong> ${escapeHtml(formatDateOnly(record.valid_until))}</p>`
+            : ""
+      }
+
+      <script>
+        window.onload = function() {
+          window.print();
+        };
+      <\/script>
+    </body>
+    </html>
+  `);
+
+  printWindow.document.close();
 }
 
 function statusClass(status) {
@@ -345,6 +462,15 @@ function viewDetails(permitId) {
         <span class="detail-value">${escapeHtml(record.permitId)}</span>
       </div>
 
+      <div class="detail-item full-width" style="text-align:center;">
+        <span class="detail-label">QR Code</span>
+        <img 
+          src="${qrImageUrl(record.permitId)}" 
+          style="width:180px; height:180px; margin:10px auto; display:block;"
+        >
+        <span class="detail-value">${escapeHtml(record.permitId)}</span>
+      </div>
+      
       <div class="detail-item">
         <span class="detail-label">Name</span>
         <span class="detail-value">${escapeHtml(record.name)}</span>
@@ -729,6 +855,19 @@ async function submitRenewal(event) {
     closeDetailModal();
 
     await loadHistoryRecords();
+
+    const renewedRecord = allRecords.find((record) => String(record.pass_id || record.record_id) === String(passId));
+
+    openQRResultModal(
+      renewedRecord || {
+        permitId: document.getElementById("renewPermitId").value,
+        name: document.getElementById("renewName").value,
+        type: "Equipment",
+        item: document.getElementById("renewItemName").value,
+        purpose: document.getElementById("renewPurpose").value
+      },
+      "Renewed Permit QR Code"
+    );
 
   } catch (err) {
     console.error("Renewal error:", err);
