@@ -583,6 +583,10 @@ function viewDetails(permitId) {
       <div class="detail-item full-width" style="margin-top:20px; text-align:right; display:flex; gap:10px; justify-content:flex-end;">
         ${renewButton}
 
+        <button class="w3-button w3-indigo" onclick="openQRResultModal(${JSON.stringify(record).replace(/"/g, '&quot;')}, 'Permit QR Code')">
+          <i class="fas fa-print"></i> Reprint QR
+        </button>
+
         <button class="w3-button w3-blue" onclick="exportHistoryPDF()">
           <i class="fas fa-file-pdf"></i> Export Full History
         </button>
